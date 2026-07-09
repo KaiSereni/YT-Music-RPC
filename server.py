@@ -56,14 +56,19 @@ class YTMHandler(BaseHTTPRequestHandler):
         else:
             try:
                 progress = int(data.get('progress', 0)) if data.get('progress') else 0
+                paused = data.get('paused', False)
                 current_rpc.update(
                     state=data.get('artist', '').strip(),
                     details=data.get('title', ''),
-                    start=int(time.time()) - progress,  # Syncs Discord's progress bar
-                    end=int(time.time()) + (int(data['total']) - int(data['progress'])),
+                    start=None if paused else int(time.time()) - progress,
+                    end=None if paused else int(time.time()) + (int(data['total']) - int(data['progress'])),
                     large_image=data.get('img', DEFAULT_SONG_COVER_URL),
                     large_text="YouTube Music",
-                    activity_type=ActivityType.LISTENING
+                    activity_type=ActivityType.LISTENING,
+                    buttons=None if not '&list=' in data.get('href', '') else [{
+                        "label": "My Playlist",
+                        "url": data.get('href', '')
+                    }]
                 )
             except Exception as e:
                 print(f"Error updating presence (connection may have dropped): {e}")

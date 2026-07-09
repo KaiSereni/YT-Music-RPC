@@ -13,6 +13,9 @@ setInterval(() => {
         const progress = progressEl.getAttribute('value') || progressEl.value || 0; // In seconds
         const img = document.querySelector("#song-image img").src;
         const total = progressEl.getAttribute('aria-valuemax');
+        const videoEl = document.querySelector('video');
+        const paused = videoEl ? videoEl.paused : false;
+        const href = window.location.href;
 
         checksSinceLastSend++;
 
@@ -20,7 +23,7 @@ setInterval(() => {
         if (title !== lastSong || checksSinceLastSend >= RESEND_INTERVAL) {
             fetch('http://localhost:3232', {
                 method: 'POST',
-                body: JSON.stringify({ title, artist, progress, img, total })
+                body: JSON.stringify({ title, artist, progress, img, total, paused, href })
             }).catch(err => {}); 
             lastSong = title;
             checksSinceLastSend = 0;
