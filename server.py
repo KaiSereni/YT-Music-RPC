@@ -11,9 +11,12 @@ DEFAULT_SONG_COVER_URL = "https://yt3.googleusercontent.com/7a03Ybk8vbe8c4dl4E8l
 CLIENT_ID = os.getenv("CLIENT_ID")
 
 RETRY_INTERVAL = 5  # Seconds between Discord connection attempts
+BROWSER_TIMEOUT = 32  # Seconds before clearing presence due to browser inactivity
 
 rpc = None
 rpc_lock = threading.Lock()
+last_message_time = 0
+presence_active = False
 
 
 def connect_rpc():
@@ -42,10 +45,29 @@ def rpc_watchdog():
             connect_rpc()
 
 
+def browser_timeout_watchdog():
+    """Background thread that clears presence if no browser message is received within BROWSER_TIMEOUT."""
+    global presence_active
+    while True:
+        time.sleep(RETRY_INTERVAL)
+        if presence_active and (time.time() - last_message_time) >= BROWSER_TIMEOUT:
+            with rpc_lock:
+                current_rpc = rpc
+            if current_rpc is not None:
+                try:
+                    current_rpc.clear()
+                    print("Browser inactive for 32s — presence cleared.")
+                except Exception as e:
+                    print(f"Error clearing presence: {e}")
+            presence_active = False
+
+
 class YTMHandler(BaseHTTPRequestHandler):
     def do_POST(self):
-        global rpc
+        global rpc, last_message_time, presence_active
         data = json.loads(self.rfile.read(int(self.headers['Content-Length'])).decode('utf-8'))
+        last_message_time = time.time()
+        presence_active = True
         print(data)
 
         with rpc_lock:
@@ -90,6 +112,9 @@ threading.Thread(target=connect_rpc, daemon=True).start()
 
 # Watchdog thread to detect and recover from dropped connections
 threading.Thread(target=rpc_watchdog, daemon=True).start()
+
+# Watchdog thread to clear presence on browser inactivity
+threading.Thread(target=browser_timeout_watchdog, daemon=True).start()
 
 print("Starting HTTP server on localhost:3232...")
 HTTPServer(('localhost', 3232), YTMHandler).serve_forever()
