@@ -78,11 +78,11 @@ class YTMHandler(BaseHTTPRequestHandler):
         else:
             try:
                 progress = int(data.get('progress', 0)) if data.get('progress') else 0
-                paused = data.get('paused', False)
+                paused = data.get('paused', True)
                 current_rpc.update(
                     state=data.get('artist', '').strip(),
                     details=data.get('title', ''),
-                    start=None if paused else int(time.time()) - progress,
+                    start=int(time.time()) - progress,
                     end=None if paused else int(time.time()) + (int(data['total']) - int(data['progress'])),
                     large_image=data.get('img', DEFAULT_SONG_COVER_URL),
                     large_text="YouTube Music",

@@ -14,10 +14,12 @@ setInterval(() => {
         const img = document.querySelector("#song-image img").src;
         const total = progressEl.getAttribute('aria-valuemax');
         const videoEl = document.querySelector('video');
-        const paused = videoEl ? videoEl.paused : false;
+        const paused = videoEl ? videoEl.paused : true;
         const href = window.location.href;
 
         checksSinceLastSend++;
+
+        console.log("Paused: " + paused);
 
         // Send update if the song changes OR every RESEND_INTERVAL checks
         if (title !== lastSong || checksSinceLastSend >= RESEND_INTERVAL) {
